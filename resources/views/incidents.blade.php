@@ -25,5 +25,5 @@
   </table></div>
   @endif
 </div>
-<div class="mt">{{ $incidents->links('pagination::simple-default') }}</div>
+<div class="mt">{{ $incidents->links('vendor.pagination.simple-default') }}</div>
 @endsection
