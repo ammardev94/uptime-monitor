@@ -31,6 +31,11 @@ class UrlHelper
         if ($href === '' || preg_match('#^(mailto:|tel:|javascript:|data:|\#)#i', $href)) {
             return null;
         }
+        // Reject hrefs that aren't real URLs, e.g. unrendered template code
+        // such as a broken "< ?php the_permalink() ..." or "{{ url }}" left in a theme.
+        if (preg_match('#[<>]|\{\{|\{%#', $href)) {
+            return null;
+        }
         if (preg_match('#^https?://#i', $href)) {
             return self::normalize($href);
         }
