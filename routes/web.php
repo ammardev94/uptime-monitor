@@ -1,5 +1,9 @@
 <?php
 
+use App\Http\Controllers\Admin\AssignmentController;
+use App\Http\Controllers\Admin\DepartmentController;
+use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SiteController;
@@ -23,7 +27,20 @@ Route::middleware('auth')->group(function () {
     Route::patch('/pages/{page}/toggle', [SiteController::class, 'togglePage'])->name('pages.toggle');
     Route::delete('/pages/{page}', [SiteController::class, 'destroyPage'])->name('pages.destroy');
     Route::get('/incidents', [SiteController::class, 'incidents'])->name('incidents');
-    Route::get('/settings', [SettingsController::class, 'edit'])->name('settings');
-    Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
-    Route::post('/settings/test-email', [SettingsController::class, 'testEmail'])->name('settings.test');
+
+    // Admin only: global settings and access control.
+    // Per-site actions above are authorised in SiteController via App\Policies\SitePolicy.
+    Route::middleware('can:admin')->group(function () {
+        Route::get('/settings', [SettingsController::class, 'edit'])->name('settings');
+        Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
+        Route::post('/settings/test-email', [SettingsController::class, 'testEmail'])->name('settings.test');
+
+        Route::prefix('admin')->name('admin.')->group(function () {
+            Route::resource('users', UserController::class)->except('show');
+            Route::resource('roles', RoleController::class)->except('show');
+            Route::resource('departments', DepartmentController::class)->except('show');
+            Route::get('assignments', [AssignmentController::class, 'index'])->name('assignments.index');
+            Route::put('assignments', [AssignmentController::class, 'update'])->name('assignments.update');
+        });
+    });
 });

@@ -104,6 +104,15 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--primary);outline
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 .code-up{color:var(--up)} .code-down{color:var(--down)}
 .chart{width:100%;height:120px;display:block}
+.pager{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;border-top:1px solid var(--border)}
+.pager-links{display:flex;gap:4px;flex-wrap:wrap}
+.pager-btn{display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:32px;padding:0 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);text-decoration:none;font-size:13px;font-weight:500;font-variant-numeric:tabular-nums}
+a.pager-btn:hover{background:var(--surface-2)}
+.pager-btn.current{background:var(--primary);color:var(--primary-text);border-color:var(--primary)}
+.pager-btn.disabled{color:var(--faint);cursor:default}
+.pager-btn.gap{border-color:transparent;background:none;color:var(--faint);min-width:20px;padding:0}
+.checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px 16px}
+.checks label{margin:0}
 @media (max-width:820px){.form-grid,.two-col{grid-template-columns:1fr}nav.main a{padding:7px 8px}.hide-sm{display:none}}
 </style>
 </head>
@@ -114,10 +123,18 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--primary);outline
     <a href="{{ route('dashboard') }}" class="brand"><span class="pulse"></span>{{ config('app.name') }}</a>
     <nav class="main">
       <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard','sites.*') ? 'active' : '' }}">Monitors</a>
-      @php $openCount = \App\Models\Incident::whereNull('resolved_at')->count(); @endphp
-      <a href="{{ route('incidents') }}" class="{{ request()->routeIs('incidents') ? 'active' : '' }}">Incidents @if($openCount)<span class="badge-count">{{ $openCount }}</span>@endif</a>
-      <a href="{{ route('settings') }}" class="{{ request()->routeIs('settings') ? 'active' : '' }}">Settings</a>
+      @can('view-incidents')
+        @php $openCount = \App\Models\Incident::visibleTo(auth()->user())->whereNull('resolved_at')->count(); @endphp
+        <a href="{{ route('incidents') }}" class="{{ request()->routeIs('incidents') ? 'active' : '' }}">Incidents @if($openCount)<span class="badge-count">{{ $openCount }}</span>@endif</a>
+      @endcan
+      @can('admin')
+        <a href="{{ route('admin.users.index') }}" class="{{ request()->routeIs('admin.users.*','admin.assignments.*') ? 'active' : '' }}">Users</a>
+        <a href="{{ route('admin.roles.index') }}" class="{{ request()->routeIs('admin.roles.*') ? 'active' : '' }}">Roles</a>
+        <a href="{{ route('admin.departments.index') }}" class="{{ request()->routeIs('admin.departments.*') ? 'active' : '' }}">Departments</a>
+        <a href="{{ route('settings') }}" class="{{ request()->routeIs('settings') ? 'active' : '' }}">Settings</a>
+      @endcan
     </nav>
+    <span class="small muted hide-sm">{{ auth()->user()->name }} · {{ auth()->user()->role?->name ?? 'No role' }}@unless(auth()->user()->isAdmin()) · {{ auth()->user()->department?->name ?? 'No department' }}@endunless</span>
     <form method="post" action="{{ route('logout') }}" class="inline">@csrf<button class="linkbtn">Log out</button></form>
   </div>
 </header>

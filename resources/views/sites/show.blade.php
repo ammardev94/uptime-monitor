@@ -17,10 +17,16 @@
     <div class="muted" style="margin-top:4px"><a href="{{ $site->url }}" target="_blank" rel="noopener">{{ $site->url }}</a> · checked every {{ $site->interval_minutes }} min · last {{ $site->last_checked_at?->diffForHumans() ?? 'never' }}</div>
   </div>
   <div class="btn-row">
+    @can('check', $site)
     <form method="post" action="{{ route('sites.check',$site) }}" class="inline" onsubmit="this.querySelector('button').textContent='Checking…'">@csrf<button class="btn primary">Check now</button></form>
     <form method="post" action="{{ route('sites.discover',$site) }}" class="inline" onsubmit="this.querySelector('button').textContent='Scanning…'">@csrf<button class="btn">Re-scan pages</button></form>
+    @endcan
+    @can('pause', $site)
     <form method="post" action="{{ route('sites.pause',$site) }}" class="inline">@csrf<button class="btn">{{ $site->is_paused ? 'Resume' : 'Pause' }}</button></form>
+    @endcan
+    @can('update', $site)
     <a href="{{ route('sites.edit',$site) }}" class="btn">Edit</a>
+    @endcan
   </div>
 </div>
 
@@ -83,10 +89,12 @@
         <td class="num">{{ $page->response_ms ? number_format($page->response_ms).' ms' : '—' }}</td>
         <td class="hide-sm small muted">{{ $page->last_checked_at?->diffForHumans(short: true) ?? '—' }}</td>
         <td class="num">
+          @can('managePages', $site)
           <form method="post" action="{{ route('pages.toggle',$page) }}" class="inline">@csrf @method('PATCH')<button class="linkbtn">{{ $page->is_active ? 'Exclude' : 'Include' }}</button></form>
           @if($page->source !== 'home')
           &nbsp;<form method="post" action="{{ route('pages.destroy',$page) }}" class="inline" onsubmit="return confirm('Remove this page?')">@csrf @method('DELETE')<button class="linkbtn danger">Remove</button></form>
           @endif
+          @endcan
         </td>
       </tr>
     @endforeach
@@ -95,7 +103,8 @@
   @endif
 </div>
 
-<div class="two-col mt">
+<div class="{{ auth()->user()->can('managePages', $site) ? 'two-col' : '' }} mt">
+  @can('managePages', $site)
   <div class="card card-pad">
     <h2>Add landing pages manually</h2>
     <form method="post" action="{{ route('pages.store',$site) }}">@csrf
@@ -104,6 +113,7 @@
       <button class="btn primary mt">Add pages</button>
     </form>
   </div>
+  @endcan
   <div class="card card-pad">
     <h2>Recent incidents</h2>
     @forelse($incidents as $inc)

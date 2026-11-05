@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Site extends Model
@@ -42,6 +44,24 @@ class Site extends Model
     public function checks(): HasMany
     {
         return $this->hasMany(SiteCheck::class);
+    }
+
+    public function departments(): BelongsToMany
+    {
+        return $this->belongsToMany(Department::class);
+    }
+
+    /** Sites the user may see: all for admins, their department's sites otherwise, none without a department. */
+    public function scopeVisibleTo(Builder $query, User $user): Builder
+    {
+        if ($user->isAdmin()) {
+            return $query;
+        }
+        if ($user->department_id === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereHas('departments', fn ($q) => $q->whereKey($user->department_id));
     }
 
     public function host(): string

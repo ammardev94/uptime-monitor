@@ -2,41 +2,53 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Department;
 use App\Models\Incident;
 use App\Models\Page;
 use App\Models\Site;
+use App\Models\SiteCheck;
 use App\Services\Background;
 use App\Services\PageDiscovery;
 use App\Services\UptimeChecker;
 use App\Services\UrlHelper;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class SiteController extends Controller
 {
-    public function index()
+    /** Rows that fit on a typical laptop screen (~780px tall) with the pager, without scrolling. */
+    private const INCIDENTS_PER_PAGE = 12;
+
+    public function index(Request $request)
     {
-        $sites = Site::withCount([
+        $user = $request->user();
+        $sites = Site::visibleTo($user)->with('departments')->withCount([
             'activePages as pages_total',
             'activePages as pages_down' => fn ($q) => $q->where('status', 'down'),
         ])->orderByRaw("CASE status WHEN 'down' THEN 0 WHEN 'partial' THEN 1 WHEN 'pending' THEN 2 WHEN 'up' THEN 3 ELSE 4 END")
             ->orderBy('name')->get();
 
-        $lastChecks = \App\Models\SiteCheck::query()
+        $lastChecks = SiteCheck::query()
             ->whereIn('id', fn ($q) => $q->selectRaw('MAX(id)')->from('site_checks')->groupBy('site_id'))
+            ->whereIn('site_id', $sites->modelKeys())
             ->get()->keyBy('site_id');
 
         return view('dashboard', [
             'sites' => $sites,
             'lastChecks' => $lastChecks,
-            'openIncidents' => Incident::whereNull('resolved_at')->count(),
-            'pagesTotal' => Page::where('is_active', true)->count(),
+            'openIncidents' => Incident::visibleTo($user)->whereNull('resolved_at')->count(),
+            'pagesTotal' => Page::where('is_active', true)->whereIn('site_id', $sites->modelKeys())->count(),
+            'departments' => $user->isAdmin() ? Department::orderBy('name')->get() : collect(),
         ]);
     }
 
     public function store(Request $request, PageDiscovery $discovery, UptimeChecker $checker)
     {
+        Gate::authorize('create', Site::class);
         $data = $this->validated($request);
+        $departmentIds = $this->validatedDepartments($request);
         $site = Site::create($data);
+        $site->departments()->sync($departmentIds);
 
         if (Background::artisan(["monitor:discover --site={$site->id}", "monitor:run --site={$site->id} --force"])) {
             return redirect()->route('sites.show', $site)
@@ -54,6 +66,7 @@ class SiteController extends Controller
 
     public function show(Site $site, Request $request)
     {
+        Gate::authorize('view', $site);
         $filter = $request->query('filter', 'all');
         $pages = $site->pages()
             ->when($filter === 'down', fn ($q) => $q->where('status', 'down')->where('is_active', true))
@@ -90,16 +103,27 @@ class SiteController extends Controller
         ]);
     }
 
-    public function edit(Site $site)
+    public function edit(Request $request, Site $site)
     {
-        return view('sites.edit', ['site' => $site]);
+        Gate::authorize('update', $site);
+
+        return view('sites.edit', [
+            'site' => $site,
+            'departments' => $request->user()->isAdmin() ? Department::orderBy('name')->get() : collect(),
+        ]);
     }
 
     public function update(Request $request, Site $site)
     {
+        Gate::authorize('update', $site);
         $data = $this->validated($request);
+        // Only admins categorise sites into departments
+        $departmentIds = $request->user()->isAdmin() ? $this->validatedDepartments($request) : null;
         $urlChanged = UrlHelper::normalize($data['url']) !== UrlHelper::normalize($site->url);
         $site->update($data);
+        if ($departmentIds !== null) {
+            $site->departments()->sync($departmentIds);
+        }
 
         if ($urlChanged) {
             app(PageDiscovery::class)->discover($site);
@@ -110,6 +134,7 @@ class SiteController extends Controller
 
     public function destroy(Site $site)
     {
+        Gate::authorize('delete', $site);
         $site->delete();
 
         return redirect()->route('dashboard')->with('ok', "Deleted {$site->name}.");
@@ -117,6 +142,7 @@ class SiteController extends Controller
 
     public function check(Site $site, UptimeChecker $checker)
     {
+        Gate::authorize('check', $site);
         if (Background::artisan(["monitor:run --site={$site->id} --force"])) {
             return back()->with('ok', 'Checking all pages in the background — refresh in a moment.');
         }
@@ -128,6 +154,7 @@ class SiteController extends Controller
 
     public function discover(Site $site, PageDiscovery $discovery, UptimeChecker $checker)
     {
+        Gate::authorize('check', $site);
         if (Background::artisan(["monitor:discover --site={$site->id}"])) {
             return back()->with('ok', 'Re-scanning pages in the background — refresh in a moment.');
         }
@@ -140,6 +167,7 @@ class SiteController extends Controller
 
     public function togglePause(Site $site)
     {
+        Gate::authorize('pause', $site);
         $site->update(['is_paused' => ! $site->is_paused, 'status' => $site->is_paused ? 'pending' : 'paused']);
 
         return back()->with('ok', $site->is_paused ? 'Monitoring paused — no checks or alerts.' : 'Monitoring resumed.');
@@ -147,6 +175,7 @@ class SiteController extends Controller
 
     public function addPage(Request $request, Site $site)
     {
+        Gate::authorize('managePages', $site);
         $request->validate(['urls' => 'required|string']);
         $added = 0;
         $skipped = [];
@@ -171,6 +200,7 @@ class SiteController extends Controller
 
     public function togglePage(Page $page)
     {
+        Gate::authorize('managePages', $page->site);
         $page->update(['is_active' => ! $page->is_active]);
         if (! $page->is_active) {
             $page->incidents()->whereNull('resolved_at')->update(['resolved_at' => now()]);
@@ -182,6 +212,7 @@ class SiteController extends Controller
 
     public function destroyPage(Page $page)
     {
+        Gate::authorize('managePages', $page->site);
         $page->delete();
 
         return back()->with('ok', 'Page removed.');
@@ -189,13 +220,14 @@ class SiteController extends Controller
 
     public function incidents(Request $request)
     {
+        Gate::authorize('view-incidents');
         $open = $request->query('open') === '1';
 
         return view('incidents', [
             'open' => $open,
-            'incidents' => Incident::with(['site', 'page'])
+            'incidents' => Incident::visibleTo($request->user())->with(['site', 'page'])
                 ->when($open, fn ($q) => $q->whereNull('resolved_at'))
-                ->latest('started_at')->paginate(50)->withQueryString(),
+                ->latest('started_at')->paginate(self::INCIDENTS_PER_PAGE)->withQueryString(),
         ]);
     }
 
@@ -213,6 +245,17 @@ class SiteController extends Controller
         $data['url'] = UrlHelper::normalize($data['url']);
 
         return $data;
+    }
+
+    /** @return int[] department ids */
+    private function validatedDepartments(Request $request): array
+    {
+        $request->validate([
+            'departments' => 'nullable|array',
+            'departments.*' => 'integer|exists:departments,id',
+        ]);
+
+        return array_map('intval', $request->input('departments', []));
     }
 
     private function withScheme(string $url): string

@@ -24,6 +24,11 @@ class Incident extends Model
         return $this->belongsTo(Page::class);
     }
 
+    public function scopeVisibleTo($query, User $user)
+    {
+        return $user->isAdmin() ? $query : $query->whereIn('site_id', Site::visibleTo($user)->select('id'));
+    }
+
     public function duration(): string
     {
         return $this->started_at->diffForHumans($this->resolved_at ?? now(), ['syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE, 'parts' => 2]);

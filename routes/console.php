@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Role;
 use App\Models\Site;
 use App\Models\SiteCheck;
 use App\Models\User;
@@ -43,13 +44,19 @@ Artisan::command('monitor:prune {--days=90}', function () {
 })->purpose('Delete old check history');
 
 Artisan::command('monitor:create-user {email} {--name=Admin} {--password=}', function () {
+    $role = Role::admin();
+    if (! $role) {
+        $this->error('No Admin role found. Run php artisan migrate first.');
+
+        return 1;
+    }
     $password = $this->option('password') ?: $this->secret('Password');
     $user = User::updateOrCreate(
         ['email' => $this->argument('email')],
-        ['name' => $this->option('name'), 'password' => bcrypt($password)]
+        ['name' => $this->option('name'), 'password' => bcrypt($password), 'role_id' => $role->id, 'department_id' => null]
     );
-    $this->info("User {$user->email} is ready. You can log in now.");
-})->purpose('Create or reset a dashboard login');
+    $this->info("Admin {$user->email} is ready. You can log in now; add other users under Admin → Users.");
+})->purpose('Create or reset an Admin dashboard login');
 
 /*
 | Schedule — requires the server cron:  * * * * * cd /path/to/app && php artisan schedule:run >> /dev/null 2>&1
