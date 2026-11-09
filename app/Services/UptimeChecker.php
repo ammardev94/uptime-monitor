@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Mail\PagesDownMail;
 use App\Mail\PagesRecoveredMail;
+use App\Mail\SiteDownMail;
 use App\Mail\SslExpiringMail;
 use App\Models\Incident;
 use App\Models\Page;
@@ -100,6 +101,7 @@ class UptimeChecker
             default => $up > 0 ? 'up' : 'down',
         };
 
+        $previousStatus = $site->status;
         $site->update([
             'status' => $status,
             'last_checked_at' => now(),
@@ -114,6 +116,11 @@ class UptimeChecker
         ]);
 
         $this->notify($site, $wentDown, $recovered);
+
+        if ($status === 'down' && $previousStatus !== 'down') {
+            $reason = $home ? $results[$home->id]['error'] : collect($results)->firstWhere('up', false)['error'] ?? null;
+            $this->notifyCreator($site, $reason);
+        }
 
         return ['total' => $total, 'up' => $up, 'went_down' => count($wentDown), 'recovered' => count($recovered)];
     }
@@ -195,6 +202,27 @@ class UptimeChecker
             }
         } catch (Throwable $e) {
             Log::error('Uptime alert email failed: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Email the Admin who added the site the moment the site goes down. Skipped when the site
+     * has no creator, the creator is no longer an Admin, or they already receive the regular
+     * down alert through Site::recipients().
+     */
+    private function notifyCreator(Site $site, ?string $reason): void
+    {
+        $owner = $site->creator;
+        if (! $owner || ! $owner->isAdmin()) {
+            return;
+        }
+        if (in_array(strtolower($owner->email), array_map('strtolower', $site->recipients()), true)) {
+            return;
+        }
+        try {
+            Mail::to($owner)->send(new SiteDownMail($site, $owner, $reason));
+        } catch (Throwable $e) {
+            Log::error('Site-down email to creator failed: '.$e->getMessage());
         }
     }
 

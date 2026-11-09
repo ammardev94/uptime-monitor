@@ -141,7 +141,7 @@ CREATE TABLE `migrations` (
   `migration` varchar(255) NOT NULL,
   `batch` int(11) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 LOCK TABLES `migrations` WRITE;
@@ -151,7 +151,8 @@ INSERT INTO `migrations` VALUES
 (2,'0001_01_01_000001_create_cache_table',1),
 (3,'0001_01_01_000002_create_jobs_table',1),
 (4,'2026_11_02_000000_create_monitor_tables',1),
-(5,'2026_11_05_000000_create_access_control_tables',2);
+(5,'2026_11_05_000000_create_access_control_tables',2),
+(6,'2026_11_09_000000_add_created_by_to_sites_table',3);
 /*!40000 ALTER TABLE `migrations` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `pages`;
@@ -264,6 +265,7 @@ CREATE TABLE `sites` (
   `auto_discover` tinyint(1) NOT NULL DEFAULT 1,
   `keyword` varchar(255) DEFAULT NULL,
   `alert_emails` varchar(255) DEFAULT NULL,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
   `is_paused` tinyint(1) NOT NULL DEFAULT 0,
   `status` varchar(255) NOT NULL DEFAULT 'pending',
   `last_checked_at` timestamp NULL DEFAULT NULL,
@@ -272,7 +274,9 @@ CREATE TABLE `sites` (
   `ssl_alert_sent` tinyint(1) NOT NULL DEFAULT 0,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `sites_created_by_foreign` (`created_by`),
+  CONSTRAINT `sites_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

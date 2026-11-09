@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -44,6 +45,12 @@ class Site extends Model
     public function checks(): HasMany
     {
         return $this->hasMany(SiteCheck::class);
+    }
+
+    /** The user who added the site (null for sites added before this was tracked, or if that user was deleted). */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function departments(): BelongsToMany

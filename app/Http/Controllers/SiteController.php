@@ -47,7 +47,9 @@ class SiteController extends Controller
         Gate::authorize('create', Site::class);
         $data = $this->validated($request);
         $departmentIds = $this->validatedDepartments($request);
-        $site = Site::create($data);
+        $site = new Site($data);
+        $site->created_by = $request->user()->id;
+        $site->save();
         $site->departments()->sync($departmentIds);
 
         if (Background::artisan(["monitor:discover --site={$site->id}", "monitor:run --site={$site->id} --force"])) {
