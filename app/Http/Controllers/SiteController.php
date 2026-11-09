@@ -22,7 +22,7 @@ class SiteController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $sites = Site::visibleTo($user)->with('departments')->withCount([
+        $sites = Site::visibleTo($user)->with(['departments', 'creator:id,name'])->withCount([
             'activePages as pages_total',
             'activePages as pages_down' => fn ($q) => $q->where('status', 'down'),
         ])->orderByRaw("CASE status WHEN 'down' THEN 0 WHEN 'pending' THEN 1 WHEN 'up' THEN 2 ELSE 3 END")

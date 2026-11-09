@@ -27,6 +27,8 @@ php artisan migrate --force
 php artisan monitor:create-user you@brande.ae --name="Your Name"   # creates an Admin; asks for a password
 ```
 
+Upgrading an install that already has sites? Run `php artisan monitor:link-sites-to-admin` once. It links sites that have no "Added by" user to the first Admin, or to another Admin with `--admin=email`. That Admin then gets a direct email when one of those sites goes down.
+
 Point your web server's document root to the `public/` folder.
 
 ## 2. Configure `.env`

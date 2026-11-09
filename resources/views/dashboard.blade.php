@@ -81,7 +81,7 @@
   <div class="table-wrap">
   <table>
     <thead><tr>
-      <th>Website</th><th>Status</th><th class="num">Pages</th><th class="num">Uptime 24h</th><th class="num hide-sm">Uptime 30d</th><th class="num hide-sm">Avg response</th><th class="hide-sm">Last check</th><th class="num">Interval</th>
+      <th>Website</th><th>Status</th><th class="num">Pages</th><th class="num">Uptime 24h</th><th class="num hide-sm">Uptime 30d</th><th class="num hide-sm">Avg response</th><th class="hide-sm">Last check</th><th class="num">Interval</th><th class="hide-sm">Added by</th>
     </tr></thead>
     <tbody>
     @foreach($sites as $site)
@@ -99,6 +99,7 @@
         <td class="num hide-sm">{{ $last?->avg_response_ms ? number_format($last->avg_response_ms).' ms' : '—' }}</td>
         <td class="hide-sm muted small">{{ $site->last_checked_at?->diffForHumans() ?? 'never' }}</td>
         <td class="num muted">{{ $site->interval_minutes }}m</td>
+        <td class="hide-sm small">{{ $site->creator?->name ?? '—' }}</td>
       </tr>
     @endforeach
     </tbody>

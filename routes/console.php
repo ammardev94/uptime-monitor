@@ -58,6 +58,31 @@ Artisan::command('monitor:create-user {email} {--name=Admin} {--password=}', fun
     $this->info("Admin {$user->email} is ready. You can log in now; add other users under Admin → Users.");
 })->purpose('Create or reset an Admin dashboard login');
 
+Artisan::command('monitor:link-sites-to-admin {--admin= : Email of the Admin to link to (defaults to the first Admin)}', function () {
+    $admin = $this->option('admin')
+        ? User::where('email', $this->option('admin'))->first()
+        : User::whereHas('role', fn ($q) => $q->where('is_admin', true))->orderBy('id')->first();
+
+    if (! $admin || ! $admin->isAdmin()) {
+        $this->error($this->option('admin') ? "No Admin user with email {$this->option('admin')}." : 'No Admin user found. Create one with monitor:create-user.');
+
+        return 1;
+    }
+
+    $sites = Site::whereNull('created_by')->orderBy('id')->get();
+    if ($sites->isEmpty()) {
+        $this->line('Every site already has a creator. Nothing to do.');
+
+        return 0;
+    }
+
+    Site::whereKey($sites->modelKeys())->update(['created_by' => $admin->id]);
+    foreach ($sites as $site) {
+        $this->line(sprintf('  %-30s → %s', $site->name, $admin->email));
+    }
+    $this->info("Linked {$sites->count()} site(s) to {$admin->name} <{$admin->email}>.");
+})->purpose('Link sites without a creator (added before creators were tracked) to an Admin');
+
 /*
 | Schedule — requires the server cron:  * * * * * cd /path/to/app && php artisan schedule:run >> /dev/null 2>&1
 */
