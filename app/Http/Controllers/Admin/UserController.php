@@ -3,11 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\WelcomeMail;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use Throwable;
 
 class UserController extends Controller
 {
@@ -31,7 +35,17 @@ class UserController extends Controller
             $user->update(['department_id' => null]);
         }
 
-        return redirect()->route('admin.users.index')->with('ok', "Created {$user->name}.".($user->isAdmin() ? '' : ' Assign them to a department so they can see sites.'));
+        $redirect = redirect()->route('admin.users.index')->with('ok', "Created {$user->name}.".($user->isAdmin() ? '' : ' Assign them to a department so they can see sites.'));
+
+        try {
+            Mail::to($user)->send(new WelcomeMail($user, $data['password']));
+        } catch (Throwable $e) {
+            Log::error('Welcome email failed: '.$e->getMessage());
+
+            return $redirect->withErrors(['mail' => "The user was created, but the welcome email to {$user->email} could not be sent: {$e->getMessage()}"]);
+        }
+
+        return $redirect;
     }
 
     public function edit(User $user)

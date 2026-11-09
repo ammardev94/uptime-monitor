@@ -15,7 +15,8 @@
         </select>
         <div class="hint">Admins see every site and are never assigned to a department.</div></div>
       <div><label>Password @if($user->exists)<span class="muted">(leave blank to keep the current one)</span>@endif</label><input type="password" name="password" autocomplete="new-password" @required(! $user->exists)></div>
-      <div><label>Confirm password</label><input type="password" name="password_confirmation" autocomplete="new-password" @required(! $user->exists)></div>
+      <div><label>Confirm password</label><input type="password" name="password_confirmation" autocomplete="new-password" @required(! $user->exists)>
+        @unless($user->exists)<div class="hint">The new user will be emailed a welcome message with their email and this password.</div>@endunless</div>
       <div class="btn-row"><button class="btn primary">{{ $user->exists ? 'Save' : 'Create user' }}</button><a href="{{ route('admin.users.index') }}" class="btn">Cancel</a></div>
     </div>
   </form>
