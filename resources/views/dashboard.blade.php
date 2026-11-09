@@ -4,7 +4,7 @@
 @section('content')
 @php
   $up = $sites->where('status','up')->count();
-  $issues = $sites->whereIn('status',['down','partial'])->count();
+  $issues = $sites->where('status','down')->count();
 @endphp
 <div class="page-head">
   <div>
@@ -38,7 +38,7 @@
 <div class="grid-stats">
   <div class="card stat"><div class="label">Websites</div><div class="value">{{ $sites->count() }}</div></div>
   <div class="card stat"><div class="label">Up</div><div class="value up">{{ $up }}</div></div>
-  <div class="card stat"><div class="label">Down / partial</div><div class="value {{ $issues ? 'down' : '' }}">{{ $issues }}</div></div>
+  <div class="card stat"><div class="label">Down</div><div class="value {{ $issues ? 'down' : '' }}">{{ $issues }}</div></div>
   <div class="card stat"><div class="label">Pages monitored</div><div class="value">{{ $pagesTotal }}</div></div>
   <div class="card stat"><div class="label">Open incidents</div><div class="value {{ $openIncidents ? 'down' : '' }}">{{ $openIncidents }}</div></div>
 </div>
@@ -90,7 +90,7 @@
         <td><div class="site-cell"><span class="dot {{ $site->status }}"></span><div>
           <a href="{{ route('sites.show',$site) }}">{{ $site->name }}</a>
           <div class="muted small">{{ $site->host() }}@can('admin') · @forelse($site->departments as $d)<span class="tag">{{ $d->name }}</span> @empty<a href="{{ route('sites.edit',$site) }}" class="faint">no department, assign</a>@endforelse @endcan</div></div></div></td>
-        <td><span class="pill {{ $site->status }}">{{ ['up'=>'Up','down'=>'Down','partial'=>'Partly down','pending'=>'Pending','paused'=>'Paused'][$site->status] ?? $site->status }}</span></td>
+        <td><span class="pill {{ $site->status }}">{{ ['up'=>'Up','down'=>'Down','pending'=>'Pending','paused'=>'Paused'][$site->status] ?? $site->status }}</span></td>
         <td class="num">
           @if($site->pages_down)<span class="code-down">{{ $site->pages_down }} down</span> · @endif{{ $site->pages_total }}
         </td>

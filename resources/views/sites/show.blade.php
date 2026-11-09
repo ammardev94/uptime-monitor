@@ -3,7 +3,7 @@
 @section('refresh', '120')
 @section('content')
 @php
-  $labels = ['up'=>'Up','down'=>'Down','partial'=>'Partly down','pending'=>'Pending','paused'=>'Paused'];
+  $labels = ['up'=>'Up','down'=>'Down','pending'=>'Pending','paused'=>'Paused'];
   $sslDays = $site->ssl_expires_at ? (int) floor(now()->diffInDays($site->ssl_expires_at, false)) : null;
   $last = $checks->last();
 @endphp

@@ -64,7 +64,7 @@ tbody tr:hover{background:var(--surface-2)}
 @keyframes blink{50%{opacity:.4}}
 .pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap}
 .pill.up{background:var(--up-bg);color:var(--up)} .pill.down{background:var(--down-bg);color:var(--down)}
-.pill.partial{background:var(--warn-bg);color:var(--warn)} .pill.pending,.pill.paused{background:var(--none-bg);color:var(--muted)}
+.pill.pending,.pill.paused{background:var(--none-bg);color:var(--muted)}
 .tag{display:inline-block;padding:1px 7px;border-radius:5px;background:var(--surface-2);border:1px solid var(--border);color:var(--muted);font-size:11px;font-weight:500}
 .site-cell{display:flex;align-items:center;gap:12px}
 .site-cell a{text-decoration:none;font-weight:600}

@@ -15,6 +15,7 @@ use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Sleep;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -38,7 +39,7 @@ class UptimeChecker
         // Confirm failures with a second request a few seconds later (avoids false alarms from blips)
         $failed = $pages->filter(fn (Page $p) => ! $results[$p->id]['up']);
         if ($failed->isNotEmpty()) {
-            sleep(3);
+            Sleep::for(3)->seconds();
             foreach ($this->probe($failed, $site) as $id => $retry) {
                 $results[$id] = $retry;
             }
@@ -89,8 +90,18 @@ class UptimeChecker
 
         $total = $pages->count();
         $up = collect($results)->where('up', true)->count();
+
+        // Site status follows the landing page only; inner-page failures are tracked per page.
+        $homeUrl = UrlHelper::normalize($site->url);
+        $home = $pages->firstWhere('source', 'home') ?? $pages->firstWhere('url', $homeUrl);
+        $status = match (true) {
+            $total === 0 => 'pending',
+            $home !== null => $results[$home->id]['up'] ? 'up' : 'down',
+            default => $up > 0 ? 'up' : 'down',
+        };
+
         $site->update([
-            'status' => $total === 0 ? 'pending' : ($up === $total ? 'up' : ($up === 0 ? 'down' : 'partial')),
+            'status' => $status,
             'last_checked_at' => now(),
         ]);
 

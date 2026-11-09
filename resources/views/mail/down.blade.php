@@ -14,4 +14,4 @@ ob_start();
 @php
 $body = ob_get_clean();
 @endphp
-@include('mail.layout', ['accent' => '#dc2626', 'heading' => '🔴 '.$site->name.' is '.($site->status === 'down' ? 'DOWN' : 'partly down'), 'body' => $body])
+@include('mail.layout', ['accent' => '#dc2626', 'heading' => '🔴 '.$site->name.($site->status === 'down' ? ' is DOWN' : ' has pages down'), 'body' => $body])

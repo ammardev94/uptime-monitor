@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('keyword')->nullable();       // optional text that must appear on the homepage
             $table->string('alert_emails')->nullable();  // extra recipients for this site (comma separated)
             $table->boolean('is_paused')->default(false);
-            $table->string('status')->default('pending'); // pending | up | partial | down | paused
+            $table->string('status')->default('pending'); // pending | up | down | paused
             $table->timestamp('last_checked_at')->nullable();
             $table->timestamp('last_discovered_at')->nullable();
             $table->timestamp('ssl_expires_at')->nullable();

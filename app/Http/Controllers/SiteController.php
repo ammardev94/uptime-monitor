@@ -25,7 +25,7 @@ class SiteController extends Controller
         $sites = Site::visibleTo($user)->with('departments')->withCount([
             'activePages as pages_total',
             'activePages as pages_down' => fn ($q) => $q->where('status', 'down'),
-        ])->orderByRaw("CASE status WHEN 'down' THEN 0 WHEN 'partial' THEN 1 WHEN 'pending' THEN 2 WHEN 'up' THEN 3 ELSE 4 END")
+        ])->orderByRaw("CASE status WHEN 'down' THEN 0 WHEN 'pending' THEN 1 WHEN 'up' THEN 2 ELSE 3 END")
             ->orderBy('name')->get();
 
         $lastChecks = SiteCheck::query()
