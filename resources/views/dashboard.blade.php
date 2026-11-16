@@ -110,10 +110,10 @@
         <td class="num muted">{{ $site->interval_minutes }}m</td>
         <td class="hide-sm small">{{ $site->creator?->name ?? '—' }}</td>
         <td>
-          <form action="{{ route('sites.destroy', [$site->id]) }}" method="POST">
+          <form action="{{ route('sites.destroy', [$site->id]) }}" method="POST" class="js-delete-site" data-site-name="{{ $site->name }}" data-site-host="{{ $site->host() }}">
             @method("DELETE")
             @csrf
-            <button onclick="return confirm('Are you sure?')" type="submit" class="btn btn-link linkbtn danger">Delete</button>
+            <button type="submit" class="linkbtn danger">Delete</button>
           </form>
         </td>
       </tr>
@@ -123,4 +123,51 @@
   </div>
   @endif
 </div>
+
+<style>
+  .swal2-popup.site-delete{border:1px solid var(--border);border-radius:14px;font-family:Inter,sans-serif;padding-bottom:22px}
+  .swal2-popup.site-delete .swal2-title{font-size:19px}
+  .swal2-popup.site-delete .swal2-html-container{font-size:14px;color:var(--muted)}
+  .swal2-popup.site-delete .swal2-actions{gap:8px}
+  .swal2-popup.site-delete .swal2-styled{border-radius:8px;font:500 13.5px Inter,sans-serif;padding:9px 18px;margin:0;box-shadow:none}
+  .swal2-popup.site-delete .swal2-cancel{background:var(--surface-2);color:var(--text);border:1px solid var(--border)}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  document.querySelectorAll('form.js-delete-site').forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      if (form.dataset.confirmed) return;
+      e.preventDefault();
+      var name = form.dataset.siteName;
+
+      // Fall back to the browser dialog if the CDN script didn't load.
+      if (typeof Swal === 'undefined') {
+        if (confirm('Delete ' + name + ' and all its history?')) { form.dataset.confirmed = '1'; form.submit(); }
+        return;
+      }
+
+      Swal.fire({
+        icon: 'warning',
+        iconColor: '#dc2626',
+        titleText: 'Delete ' + name + '?',
+        text: form.dataset.siteHost + ' will stop being monitored, and its pages, incidents and uptime history will be permanently removed. This can\'t be undone.',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete it',
+        cancelButtonText: 'Keep site',
+        confirmButtonColor: '#dc2626',
+        focusCancel: true,
+        reverseButtons: true,
+        background: 'var(--surface)',
+        color: 'var(--text)',
+        customClass: { popup: 'site-delete' },
+        showLoaderOnConfirm: true,
+        preConfirm: function () {
+          form.dataset.confirmed = '1';
+          form.submit();
+          return new Promise(function () {}); // keep the spinner until the page navigates
+        }
+      });
+    });
+  });
+</script>
 @endsection
