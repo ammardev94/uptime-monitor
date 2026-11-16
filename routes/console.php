@@ -86,6 +86,10 @@ Artisan::command('monitor:link-sites-to-admin {--admin= : Email of the Admin to 
 /*
 | Schedule — requires the server cron:  * * * * * cd /path/to/app && php artisan schedule:run >> /dev/null 2>&1
 */
-Schedule::command('monitor:run')->everyMinute()->withoutOverlapping(10)->runInBackground();
+// Schedule::command('monitor:run')->everyMinute()->withoutOverlapping(10)->runInBackground();
+Schedule::command('monitor:run')
+    ->cron('*/7 * * * *')
+    ->withoutOverlapping(10)
+    ->runInBackground();
 Schedule::command('monitor:discover')->dailyAt('03:00')->withoutOverlapping();
 Schedule::command('monitor:prune')->weekly();

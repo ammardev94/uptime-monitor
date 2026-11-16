@@ -81,7 +81,16 @@
   <div class="table-wrap">
   <table>
     <thead><tr>
-      <th>Website</th><th>Status</th><th class="num">Pages</th><th class="num">Uptime 24h</th><th class="num hide-sm">Uptime 30d</th><th class="num hide-sm">Avg response</th><th class="hide-sm">Last check</th><th class="num">Interval</th><th class="hide-sm">Added by</th>
+      <th>Website</th>
+      <th>Status</th>
+      <th class="num">Pages</th>
+      <th class="num">Uptime 24h</th>
+      <th class="num hide-sm">Uptime 30d</th>
+      <th class="num hide-sm">Avg response</th>
+      <th class="hide-sm">Last check</th>
+      <th class="num">Interval</th>
+      <th class="hide-sm">Added by</th>
+      <th>Action</th>
     </tr></thead>
     <tbody>
     @foreach($sites as $site)
@@ -100,6 +109,13 @@
         <td class="hide-sm muted small">{{ $site->last_checked_at?->diffForHumans() ?? 'never' }}</td>
         <td class="num muted">{{ $site->interval_minutes }}m</td>
         <td class="hide-sm small">{{ $site->creator?->name ?? '—' }}</td>
+        <td>
+          <form action="{{ route('sites.destroy', [$site->id]) }}" method="POST">
+            @method("DELETE")
+            @csrf
+            <button type="submit" class="btn btn-link linkbtn danger">Delete</button>
+          </form>
+        </td>
       </tr>
     @endforeach
     </tbody>
