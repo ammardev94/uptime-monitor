@@ -113,7 +113,7 @@
           <form action="{{ route('sites.destroy', [$site->id]) }}" method="POST">
             @method("DELETE")
             @csrf
-            <button type="submit" class="btn btn-link linkbtn danger">Delete</button>
+            <button onclick="return confirm('Are you sure?')" type="submit" class="btn btn-link linkbtn danger">Delete</button>
           </form>
         </td>
       </tr>
